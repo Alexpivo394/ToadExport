@@ -34,7 +34,7 @@
     <!-- Core Dependencies -->
     <ItemGroup>
         <PackageVersion Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageVersion Include="OpenMcdf" Version="2.4.1"/>
+        <PackageVersion Include="OpenMcdf" Version="3.3.0"/>
 
         <!-- Testing -->
         <PackageVersion Include="Shouldly" Version="4.3.0"/>
