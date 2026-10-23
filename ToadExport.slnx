@@ -17,7 +17,14 @@
     <BuildType Name="Release.R26" />
     <BuildType Name="Release.R27" />
   </Configurations>
+  <Folder Name="/Automation/">
+    <Project Path="build/Build.csproj">
+      <BuildType Project="Release" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
   <Folder Name="/Solution Items/">
+    <File Path="build/appsettings.json" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="Readme.md" />
