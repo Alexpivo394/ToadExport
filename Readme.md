@@ -42,7 +42,7 @@ var result = exporter.Export(
 [![Nuget](https://img.shields.io/nuget/vpre/Alexpivo394.Revit.Export.Sources?style=for-the-badge)](https://www.nuget.org/packages/Alexpivo394.Revit.Export.Sources)
 [![Downloads](https://img.shields.io/nuget/dt/Alexpivo394.Revit.Export.Sources?style=for-the-badge)](https://www.nuget.org/packages/Alexpivo394.Revit.Export.Sources)
 
-Model sources without the Revit API (`net48`, `net10.0`): Revit Server tree over REST, folder tree and the `.rvt` version reader.
+Model sources without the Revit API (`net47` for Revit 2020–2024, `net10.0` for Revit 2025+): Revit Server tree over REST, folder tree and the `.rvt` version reader.
 
 Installation:
 
