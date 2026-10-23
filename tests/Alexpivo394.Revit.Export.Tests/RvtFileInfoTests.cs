@@ -53,6 +53,33 @@ public class RvtFileInfoTests
         RvtFileInfo.TryReadYear(file.Path).ShouldBeNull();
     }
 
+    [Test]
+    [Arguments(0)]
+    [Arguments(1)]
+    [Arguments(2)]
+    public void TryReadYear_CorruptedOleFile_Null(int seed)
+    {
+        using var file = new TempFile();
+        var garbage = new byte[4096];
+        new Random(seed).NextBytes(garbage);
+        byte[] signature = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+        signature.CopyTo(garbage, 0);
+        File.WriteAllBytes(file.Path, garbage);
+
+        RvtFileInfo.TryReadYear(file.Path).ShouldBeNull();
+    }
+
+    [Test]
+    public void TryReadYear_TruncatedRealHeader_Null()
+    {
+        using var file = new TempFile();
+        WriteCompound(file.Path, "BasicFileInfo", Encoding.Unicode.GetBytes("Format: 2024"));
+        var bytes = File.ReadAllBytes(file.Path);
+        File.WriteAllBytes(file.Path, bytes.Take(600).ToArray());
+
+        RvtFileInfo.TryReadYear(file.Path).ShouldBeNull();
+    }
+
     private static void WriteCompound(string path, string streamName, byte[] data)
     {
         using var root = RootStorage.Create(path);
