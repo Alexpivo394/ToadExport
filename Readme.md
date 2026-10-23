@@ -11,11 +11,6 @@ The Revit package version matches the Revit release, for example use `2024.*` fo
 
 Didn't find the feature you need? [Tell me](https://github.com/Alexpivo394/ToadExport/issues/new)
 
-## Acknowledgements
-
-Special thanks to [Nice3Point](https://github.com/Nice3point) for the valuable advice and code contribution that helped improve this project.
-
-His work around Revit API development, open-source tooling, and developer experience is a huge source of inspiration for this repository.
 
 ## Alexpivo394.Revit.Export
 
