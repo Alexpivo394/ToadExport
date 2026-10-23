@@ -1,25 +1,36 @@
-# ToadExport
+<p align="center">
+    <h1 align="center">ToadExport</h1>
+    <p align="center">Revit model export to RVT and NWC for Revit 2020–2027</p>
+</p>
 
-UI-free core for exporting Autodesk Revit models to RVT and NWC, shipped as NuGet packages for Revit 2020–2027.
-It is shared by the ToadExporter add-in (ToadTools) and the ToadFlow export farm.
+## Libraries for Revit model export
 
-## Packages
+This repository contains the export core used by the [ToadTools](https://github.com/Alexpivo394/ToadTools) ToadExporter add-in and by the [ToadFlow](https://github.com/Alexpivo394/ToadFlow) export farm. The core has no UI and is packed into separate NuGet packages for easy connection to your add-in or service.
 
-| Package | Revit API | Contents |
-|---|---|---|
-| `Alexpivo394.Revit.Export` | yes, one package version per Revit year | detached opening with link unloading, workset filtering, NWC export by 3D view, RVT cleanup (links, CAD, point clouds, purge from 2024, compact), local copy of workshared models, version guard |
-| `Alexpivo394.Revit.Export.Sources` | no (`net48`, `net10.0`) | Revit Server tree over REST, folder tree, `.rvt` version reader |
+The Revit package version matches the Revit release, for example use `2024.*` for Revit 2024. A model is always exported in the Revit version it was saved in: the version guard refuses to open a model saved in another release, unless the caller explicitly allows an upgrade.
 
-## Usage
+Didn't find the feature you need? [Tell me](https://github.com/Alexpivo394/ToadExport/issues/new)
 
-The Revit package version starts with the Revit year, so a multi-version add-in picks the matching build:
+## Acknowledgements
 
-```xml
-<PackageVersion Include="Alexpivo394.Revit.Export" Version="$(RevitVersion).*"/>
-<PackageVersion Include="Alexpivo394.Revit.Export.Sources" Version="1.*"/>
+Special thanks to [Nice3Point](https://github.com/Nice3point) for the valuable advice and code contribution that helped improve this project.
+
+His work around Revit API development, open-source tooling, and developer experience is a huge source of inspiration for this repository.
+
+## Alexpivo394.Revit.Export
+
+[![Nuget](https://img.shields.io/nuget/vpre/Alexpivo394.Revit.Export?style=for-the-badge)](https://www.nuget.org/packages/Alexpivo394.Revit.Export)
+[![Downloads](https://img.shields.io/nuget/dt/Alexpivo394.Revit.Export?style=for-the-badge)](https://www.nuget.org/packages/Alexpivo394.Revit.Export)
+
+Export of one model inside the Revit API context: detached opening with link unloading, workset filtering, NWC export by 3D view, RVT cleanup (Revit links, CAD, point clouds, purge from Revit 2024, compact), local copy of workshared models and the version guard.
+
+Installation:
+
+```text
+<PackageReference Include="Alexpivo394.Revit.Export" Version="$(RevitVersion).*"/>
 ```
 
-Export one model inside the Revit API context:
+Usage:
 
 ```csharp
 var exporter = new ModelExporter(application);
@@ -31,22 +42,27 @@ var result = exporter.Export(
     log);       // IExportLog
 ```
 
-Read a model's Revit version without Revit:
+## Alexpivo394.Revit.Export.Sources
+
+[![Nuget](https://img.shields.io/nuget/vpre/Alexpivo394.Revit.Export.Sources?style=for-the-badge)](https://www.nuget.org/packages/Alexpivo394.Revit.Export.Sources)
+[![Downloads](https://img.shields.io/nuget/dt/Alexpivo394.Revit.Export.Sources?style=for-the-badge)](https://www.nuget.org/packages/Alexpivo394.Revit.Export.Sources)
+
+Model sources without the Revit API (`net48`, `net10.0`): Revit Server tree over REST, folder tree and the `.rvt` version reader.
+
+Installation:
+
+```text
+<PackageReference Include="Alexpivo394.Revit.Export.Sources" Version="1.*"/>
+```
+
+Usage:
 
 ```csharp
 int? year = RvtFileInfo.TryReadYear(@"\\nas\projects\AR.rvt");
 ```
 
-## Versioning and releases
+## Releases
 
-A release tag `X.Y.Z` publishes:
+A tag `X.Y.Z` publishes `Alexpivo394.Revit.Export` as `{year}.X.Y.Z` for every Revit year 2020–2027 and `Alexpivo394.Revit.Export.Sources` as `X.Y.Z`, then creates a GitHub release with the packages.
 
-- `Alexpivo394.Revit.Export` as `{year}.X.Y.Z` for every year 2020–2027 (for example `2024.1.0.0`, shown by NuGet as `2024.1.0`);
-- `Alexpivo394.Revit.Export.Sources` as `X.Y.Z`.
-
-Push the tag to release; GitHub Actions packs, publishes to nuget.org (`NUGET_API_KEY` secret) and creates a GitHub release.
 Local pack: `cd build && DOTNET_ENVIRONMENT=Development dotnet run -c Release -- pack` writes `0.0.0-dev` packages to `output/`.
-
-## License
-
-MIT
