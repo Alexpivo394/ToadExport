@@ -5,7 +5,7 @@
 
 ## Libraries for Revit model export
 
-This repository contains the export core used by the [ToadTools](https://github.com/Alexpivo394/ToadTools) ToadExporter add-in and by the [ToadFlow](https://github.com/Alexpivo394/ToadFlow) export farm. The core has no UI and is packed into separate NuGet packages for easy connection to your add-in or service.
+This repository contains the export core used by the [ToadTools](https://github.com/Alexpivo394/ToadTools) ToadExporter add-in and by the [ToadFlow](https://github.com/Alexpivo394/ToadFlow) Revit automation service. The core has no UI and is packed into separate NuGet packages for easy connection to your add-in or service.
 
 The Revit package version matches the Revit release, for example use `2024.*` for Revit 2024. A model is always exported in the Revit version it was saved in: the version guard refuses to open a model saved in another release, unless the caller explicitly allows an upgrade.
 
