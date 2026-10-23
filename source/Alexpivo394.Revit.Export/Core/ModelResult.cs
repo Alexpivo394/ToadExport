@@ -17,6 +17,13 @@ public sealed class ModelResult
     /// <summary>Нажали «Пропустить модель» или «Прервать».</summary>
     public bool SkippedByUser { get; set; }
 
+    /// <summary>
+    ///     Шаг упал на внутренней ошибке Revit (<c>Autodesk.Revit.Exceptions.InternalException</c>, «A managed exception was
+    ///     thrown by Revit or by one of its external applications»), а не из-за самой модели. Повтор в новом процессе Revit
+    ///     обычно проходит.
+    /// </summary>
+    public bool RevitFailure { get; set; }
+
     public bool HasErrors => Rvt == StepResult.Failed || Nwc == StepResult.Failed;
 
     public bool IsExported => !SkippedByUser && !HasErrors && (Rvt == StepResult.Done || Nwc == StepResult.Done);

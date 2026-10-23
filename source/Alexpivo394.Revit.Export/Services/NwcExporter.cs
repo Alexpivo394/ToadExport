@@ -9,7 +9,8 @@ public static class NwcExporter
 {
     public static bool IsAvailable() => OptionalFunctionalityUtils.IsNavisworksExporterAvailable();
 
-    public static StepResult Export(Document document, string folder, string name, ExportOptions options, out string? note)
+    /// <param name="linksUnloaded">Связи RVT не загружались при открытии — их содержимого на виде нет.</param>
+    public static StepResult Export(Document document, string folder, string name, ExportOptions options, bool linksUnloaded, out string? note)
     {
         var viewName = options.NwcViewName.Trim();
         var view = new FilteredElementCollector(document)
@@ -23,13 +24,53 @@ public static class NwcExporter
             return StepResult.Skipped;
         }
 
+        // Пустой вид Navisworks Exporter либо отвергает ошибкой «нет подходящих элементов», либо молча не создаёт файл.
+        if (!HasExportableElements(document, view, options, linksUnloaded))
+        {
+            note = $"на виде «{viewName}» нет видимых элементов модели{EmptyViewHint(options, linksUnloaded)}, NWC пропущен";
+            return StepResult.Skipped;
+        }
+
         // Экспортер сам не всегда перезаписывает файл — удаляем старый; занятый файл даст понятную ошибку.
         var target = Path.Combine(folder, name + ".nwc");
         if (File.Exists(target)) File.Delete(target);
 
         document.Export(folder, name, Options(view, options));
+
+        // Экспорт ничего не возвращает: без файла выгрузка не удалась, даже если Revit не сообщил об ошибке.
+        if (!File.Exists(target) || new FileInfo(target).Length == 0)
+            throw new InvalidOperationException("Navisworks Exporter не создал файл NWC");
+
         note = null;
         return StepResult.Done;
+    }
+
+    /// <summary>
+    ///     На виде есть что выгружать: видимый элемент модели или, если связи выгружаются в NWC, загруженная связь.
+    ///     Сборщик с видом учитывает скрытие на виде, фильтры, рамку и закрытые рабочие наборы.
+    /// </summary>
+    private static bool HasExportableElements(Document document, View3D view, ExportOptions options, bool linksUnloaded)
+    {
+        foreach (var element in new FilteredElementCollector(document, view.Id).WhereElementIsNotElementType())
+        {
+            if (element is RevitLinkInstance link)
+            {
+                if (options.NwcExportLinks && !linksUnloaded && link.GetLinkDocument() is not null) return true;
+                continue;
+            }
+
+            if (element.Category is { CategoryType: CategoryType.Model }) return true;
+        }
+
+        return false;
+    }
+
+    private static string EmptyViewHint(ExportOptions options, bool linksUnloaded)
+    {
+        var reasons = new List<string>();
+        if (linksUnloaded) reasons.Add("связи не загружались");
+        if (!string.IsNullOrWhiteSpace(options.WorksetKeyword)) reasons.Add($"рабочие наборы с «{options.WorksetKeyword.Trim()}» закрыты");
+        return reasons.Count == 0 ? "" : $" ({string.Join(", ", reasons)})";
     }
 
     private static NavisworksExportOptions Options(View3D view, ExportOptions options) => new()
