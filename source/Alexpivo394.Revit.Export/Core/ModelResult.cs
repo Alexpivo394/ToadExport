@@ -24,6 +24,12 @@ public sealed class ModelResult
     /// </summary>
     public bool RevitFailure { get; set; }
 
+    /// <summary>
+    ///     Модель не удалось закрыть: она может остаться открытой и держать память, а состояние Revit неизвестно. Вызывающему,
+    ///     который переиспользует процесс Revit (ферма), лучше его перезапустить.
+    /// </summary>
+    public bool CloseFailed { get; set; }
+
     public bool HasErrors => Rvt == StepResult.Failed || Nwc == StepResult.Failed;
 
     public bool IsExported => !SkippedByUser && !HasErrors && (Rvt == StepResult.Done || Nwc == StepResult.Done);

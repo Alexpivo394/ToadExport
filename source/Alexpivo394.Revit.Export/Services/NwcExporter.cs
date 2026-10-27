@@ -10,7 +10,9 @@ public static class NwcExporter
     public static bool IsAvailable() => OptionalFunctionalityUtils.IsNavisworksExporterAvailable();
 
     /// <param name="linksUnloaded">Связи RVT не загружались при открытии — их содержимого на виде нет.</param>
-    public static StepResult Export(Document document, string folder, string name, ExportOptions options, bool linksUnloaded, out string? note)
+    /// <param name="progress">Куда передавать ход экспорта, если Revit о нём сообщает, и откуда узнать, что экспорт просят прервать.</param>
+    public static StepResult Export(Document document, string folder, string name, ExportOptions options, bool linksUnloaded, IExportProgress progress,
+        out string? note)
     {
         var viewName = options.NwcViewName.Trim();
         var view = new FilteredElementCollector(document)
@@ -31,11 +33,17 @@ public static class NwcExporter
             return StepResult.Skipped;
         }
 
-        // Экспортер сам не всегда перезаписывает файл — удаляем старый; занятый файл даст понятную ошибку.
+        // Экспортер сам не всегда перезаписывает файл — удаляем старый. ModelExporter экспортирует в пустую временную папку
+        // и подменяет результат готовым файлом (OutputFile), так что прошлая выгрузка здесь не теряется.
         var target = Path.Combine(folder, name + ".nwc");
         if (File.Exists(target)) File.Delete(target);
 
-        document.Export(folder, name, Options(view, options));
+        // NavisworksExportOptions держит неуправляемый объект Revit — освобождаем сразу, а не когда дойдёт сборщик мусора.
+        using (var exportOptions = Options(view, options))
+        using (new RevitProgressRelay(document.Application, progress, "Экспорт NWC"))
+        {
+            document.Export(folder, name, exportOptions);
+        }
 
         // Экспорт ничего не возвращает: без файла выгрузка не удалась, даже если Revit не сообщил об ошибке.
         if (!File.Exists(target) || new FileInfo(target).Length == 0)

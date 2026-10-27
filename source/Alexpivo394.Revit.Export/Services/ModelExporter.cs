@@ -44,10 +44,18 @@ public sealed class ModelExporter(RevitApplication application)
                 ThrowIfAborted(progress);
                 progress.Status("Экспорт NWC");
                 log.Step(job.Name, "экспорт NWC");
-                result.Nwc = Attempt(progress, result, notes, "NWC", () =>
+                result.Nwc = Attempt(progress, log, job, result, notes, "NWC", () =>
                 {
-                    var step = NwcExporter.Export(document, output, baseName, options, opened.LinksUnloaded, out var note);
+                    // Экспорт — во временную папку: зависший или упавший экспорт не трогает прошлый NWC, подменяем только готовым.
+                    var staging = Directory.CreateDirectory(Path.Combine(temp.Directory, "nwc")).FullName;
+                    var step = NwcExporter.Export(document, staging, baseName, options, opened.LinksUnloaded, progress, out var note);
                     Note(notes, note);
+                    if (step == StepResult.Done)
+                    {
+                        progress.Status("Публикация NWC");
+                        var bytes = OutputFile.Publish(Path.Combine(staging, baseName + ".nwc"), Path.Combine(output, baseName + ".nwc"));
+                        log.Step(job.Name, $"NWC записан, {bytes / (1024.0 * 1024.0):0.#} МБ");
+                    }
                     if (step == StepResult.Done && options.NwcExportLinks && opened.LinksUnloaded)
                         notes.Add("связи не загружались — в NWC их нет");
                     return step;
@@ -58,7 +66,7 @@ public sealed class ModelExporter(RevitApplication application)
             {
                 ThrowIfAborted(progress);
                 log.Step(job.Name, "подготовка и сохранение RVT");
-                result.Rvt = Attempt(progress, result, notes, "RVT", () =>
+                result.Rvt = Attempt(progress, log, job, result, notes, "RVT", () =>
                 {
                     var path = target;
                     if (document.IsWorkshared)
@@ -79,12 +87,13 @@ public sealed class ModelExporter(RevitApplication application)
             if (job.Rvt && result.Rvt == StepResult.NotRequested) result.Rvt = StepResult.Failed;
             if (job.Nwc && result.Nwc == StepResult.NotRequested) result.Nwc = StepResult.Failed;
             notes.Add(exception.Message);
+            log.Step(job.Name, $"ошибка: {exception}");
             result.RevitFailure |= exception is Autodesk.Revit.Exceptions.InternalException;
         }
         finally
         {
             var workshared = document is { IsValidObject: true, IsWorkshared: true };
-            Close(document, job, progress, log);
+            result.CloseFailed = !Close(document, job, progress, log);
             if (result.Rvt == StepResult.Done && central is not null) CreateLocal(central, target, result, notes, progress);
             if (result.Rvt == StepResult.Done && opened is not null)
             {
@@ -128,7 +137,8 @@ public sealed class ModelExporter(RevitApplication application)
     }
 
     /// <summary>Шаг, ошибка которого не мешает следующему шагу той же модели.</summary>
-    private static StepResult Attempt(IExportProgress progress, ModelResult result, List<string> notes, string format, Func<StepResult> step)
+    private static StepResult Attempt(IExportProgress progress, IExportLog log, ModelJob job, ModelResult result, List<string> notes, string format,
+        Func<StepResult> step)
     {
         try
         {
@@ -137,6 +147,7 @@ public sealed class ModelExporter(RevitApplication application)
         catch (Exception exception) when (!progress.ShouldAbort && exception is not OperationCanceledException)
         {
             notes.Add($"{format}: {exception.Message}");
+            log.Step(job.Name, $"{format}: {exception}");
             result.RevitFailure |= exception is Autodesk.Revit.Exceptions.InternalException;
             return StepResult.Failed;
         }
@@ -152,18 +163,21 @@ public sealed class ModelExporter(RevitApplication application)
         if (progress.ShouldAbort) throw new OperationCanceledException();
     }
 
-    private static void Close(Document? document, ModelJob job, IExportProgress progress, IExportLog log)
+    /// <returns>false — модель не закрылась.</returns>
+    private static bool Close(Document? document, ModelJob job, IExportProgress progress, IExportLog log)
     {
-        if (document is null || !document.IsValidObject) return;
+        if (document is null || !document.IsValidObject) return true;
 
         progress.Status("Закрытие модели");
         try
         {
             document.Close(false);
+            return true;
         }
         catch (Exception exception)
         {
-            log.Step(job.Name, $"не удалось закрыть модель: {exception.Message}");
+            log.Step(job.Name, $"не удалось закрыть модель: {exception}");
+            return false;
         }
     }
 }
