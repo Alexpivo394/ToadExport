@@ -48,8 +48,9 @@ public sealed class ModelExporter(RevitApplication application)
                 {
                     // Экспорт — во временную папку: зависший или упавший экспорт не трогает прошлый NWC, подменяем только готовым.
                     var staging = Directory.CreateDirectory(Path.Combine(temp.Directory, "nwc")).FullName;
-                    var step = NwcExporter.Export(document, staging, baseName, options, opened.LinksUnloaded, progress, out var note);
+                    var step = NwcExporter.Export(document, staging, baseName, options, opened.LinksUnloaded, progress, out var note, out var missing);
                     Note(notes, note);
+                    result.NwcMissing = missing;
                     if (step == StepResult.Done)
                     {
                         progress.Status("Публикация NWC");
@@ -149,6 +150,7 @@ public sealed class ModelExporter(RevitApplication application)
             notes.Add($"{format}: {exception.Message}");
             log.Step(job.Name, $"{format}: {exception}");
             result.RevitFailure |= exception is Autodesk.Revit.Exceptions.InternalException;
+            result.NwcMissing |= exception is NwcNotCreatedException;
             return StepResult.Failed;
         }
     }
