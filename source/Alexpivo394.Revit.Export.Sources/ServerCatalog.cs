@@ -2,7 +2,8 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace Alexpivo394.Revit.Export.Sources;
 
@@ -179,7 +180,7 @@ public sealed class ServerCatalog : ITreeSource
         try
         {
             if (!File.Exists(_cacheFile)) return;
-            var cache = JsonConvert.DeserializeObject<CacheFileData>(File.ReadAllText(_cacheFile));
+            var cache = JsonSerializer.Deserialize<CacheFileData>(File.ReadAllText(_cacheFile), CacheJson);
             if (cache?.Folders is null) return;
 
             _folders = new Dictionary<string, IReadOnlyList<SourceEntry>>(
@@ -209,13 +210,20 @@ public sealed class ServerCatalog : ITreeSource
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(_cacheFile)!);
-            File.WriteAllText(_cacheFile, JsonConvert.SerializeObject(cache));
+            File.WriteAllText(_cacheFile, JsonSerializer.Serialize(cache, CacheJson));
         }
         catch
         {
             // Не записалась копия — в следующем сеансе каталог просто прочитается с сервера.
         }
     }
+
+    /// <summary>Копию каталога, записанную прежними версиями (Newtonsoft.Json), читает так же: имена полей в любом регистре.</summary>
+    private static readonly JsonSerializerOptions CacheJson = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     private sealed class CacheFileData
     {

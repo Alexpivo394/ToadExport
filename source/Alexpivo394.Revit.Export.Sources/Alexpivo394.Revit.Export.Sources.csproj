@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <!-- net47 — Revit 2020, он же подходит Revit 2021–2024 (net48) -->
-        <TargetFrameworks>net47;net10.0</TargetFrameworks>
+        <!-- net47 — Revit 2020, он же подходит Revit 2021–2024 (net48); net8.0 — Revit 2025–2026; net10.0 — Revit 2027 -->
+        <TargetFrameworks>net47;net8.0;net10.0</TargetFrameworks>
         <IsPackable>true</IsPackable>
         <PackageId>Alexpivo394.Revit.Export.Sources</PackageId>
         <Description>Revit model sources without the Revit API: Revit Server REST tree, folder tree, .rvt version reader.</Description>
@@ -10,12 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Newtonsoft.Json"/>
         <PackageReference Include="OpenMcdf"/>
     </ItemGroup>
 
-    <!-- HttpClient для REST API Revit Server; на .NET входит в рантайм -->
+    <!-- HttpClient для REST API Revit Server и System.Text.Json; на .NET входят в рантайм -->
     <ItemGroup Condition="'$(TargetFramework)' == 'net47'">
+        <PackageReference Include="System.Text.Json"/>
         <Reference Include="System.Net.Http"/>
     </ItemGroup>
 

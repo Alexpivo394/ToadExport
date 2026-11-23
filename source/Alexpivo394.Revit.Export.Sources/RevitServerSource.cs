@@ -1,5 +1,5 @@
 using System.Net.Http;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 
 namespace Alexpivo394.Revit.Export.Sources;
 
@@ -61,29 +61,38 @@ public sealed class RevitServerSource : ITreeSource
 
     private IReadOnlyList<SourceEntry> Parse(string body, string folderPath)
     {
-        JObject json;
+        List<string> folderNames, modelNames;
         try
         {
-            json = JObject.Parse(body);
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != JsonValueKind.Object) throw new JsonException("ожидался объект JSON");
+            folderNames = Names(document.RootElement, "Folders");
+            modelNames = Names(document.RootElement, "Models");
         }
         catch (Exception exception)
         {
             throw new SourceException(Describe("непонятный ответ сервера"), exception);
         }
 
-        var folders = Names(json, "Folders")
+        var folders = folderNames
             .Select(name => new SourceEntry(name, RevitServerPaths.Combine(folderPath, name), "", true));
-        var models = Names(json, "Models")
+        var models = modelNames
             .Select(name => new SourceEntry(name, folderPath, RevitServerPaths.ModelPath(_server, folderPath, name), false));
 
         return folders.Concat(models).ToList();
     }
 
-    private static IEnumerable<string> Names(JObject json, string property) =>
-        (json[property] as JArray ?? [])
-        .Select(item => (string?)item["Name"])
-        .Where(name => !string.IsNullOrEmpty(name))
-        .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)!;
+    /// <summary>Имена из массива объектов <c>{ "Name": … }</c>; массива нет — пусто.</summary>
+    private static List<string> Names(JsonElement json, string property)
+    {
+        if (!json.TryGetProperty(property, out var items) || items.ValueKind != JsonValueKind.Array) return [];
+        return items.EnumerateArray()
+            .Select(item => item.ValueKind == JsonValueKind.Object && item.TryGetProperty("Name", out var name) && name.ValueKind == JsonValueKind.String ? name.GetString() : null)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Select(name => name!)
+            .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
 
     private string Describe(string reason) => $"Не удалось получить содержимое {_server}: {reason}";
 }

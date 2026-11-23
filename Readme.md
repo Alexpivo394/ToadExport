@@ -31,7 +31,7 @@ It is written for batch runs that nobody watches, so the awkward cases are handl
 | Package | Targets | Revit API | What it does |
 |---|---|---|---|
 | [`Alexpivo394.Revit.Export`](https://www.nuget.org/packages/Alexpivo394.Revit.Export) | per Revit year | yes | Exports one model inside the Revit API context |
-| [`Alexpivo394.Revit.Export.Sources`](https://www.nuget.org/packages/Alexpivo394.Revit.Export.Sources) | `net47`, `net10.0` | no | Lists models on Revit Server or in a folder; reads the Revit year of an `.rvt` |
+| [`Alexpivo394.Revit.Export.Sources`](https://www.nuget.org/packages/Alexpivo394.Revit.Export.Sources) | `net47`, `net8.0`, `net10.0` | no | Lists models on Revit Server or in a folder; reads the Revit year of an `.rvt` |
 
 The version of `Alexpivo394.Revit.Export` starts with the Revit year: use `2024.*` for Revit 2024.
 

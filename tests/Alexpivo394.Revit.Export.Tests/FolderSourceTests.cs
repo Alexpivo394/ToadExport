@@ -1,6 +1,5 @@
 using Shouldly;
 using Alexpivo394.Revit.Export.Sources;
-using Alexpivo394.Revit.Export.Sources;
 
 namespace Alexpivo394.Revit.Export.Tests;
 
